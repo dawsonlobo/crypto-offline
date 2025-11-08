@@ -109,7 +109,7 @@ function App() {
           transaction: tx,
         });
       }
-    } catch (e) {
+    } catch {
       alert('Invalid QR code data. Make sure it contains a valid JSON Transaction.');
     }
   };
