@@ -80,13 +80,13 @@ export default function SignTransaction({
                 <div>
                   <p className="text-xs text-slate-500 mb-1">Sender</p>
                   <p className="font-mono text-sm text-slate-800 font-medium">
-                    {shortenAddress(transaction.sender)}
+                    {shortenAddress(transaction.senderAddress)}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 mb-1">Receiver</p>
                   <p className="font-mono text-sm text-slate-800 font-medium">
-                    {shortenAddress(transaction.receiver)}
+                    {shortenAddress(transaction.receiverAddress)}
                   </p>
                 </div>
               </div>
@@ -94,9 +94,16 @@ export default function SignTransaction({
               <div className="mt-4 pt-4 border-t border-slate-200">
                 <p className="text-xs text-slate-500 mb-1">Sender Balance</p>
                 <p className="text-sm font-semibold text-slate-800">
-                  {transaction.senderBalance} {transaction.coin}{' '}
+                  {
+                  //todo: update these 
+                  // transaction?.senderBalance 
+                  0} {
+                    // transaction.coin
+                    "SOL"}{' '}
                   <span className="font-normal text-slate-600">
-                    (${transaction.senderBalanceUSD})
+                    (${
+                    // transaction.senderBalanceUSD
+                    0})
                   </span>
                 </p>
               </div>
@@ -104,9 +111,14 @@ export default function SignTransaction({
               <div className="mt-3">
                 <p className="text-xs text-slate-500 mb-1">Amount</p>
                 <p className="text-lg font-bold text-blue-600">
-                  {transaction.amount} {transaction.coin}{' '}
+                  {transaction.amount} {
+                  // transaction.coin
+                  "SOL"
+                  }{' '}
                   <span className="text-sm font-normal text-slate-600">
-                    (${transaction.amountUSD})
+                    (${
+                    transaction.amount
+                    })
                   </span>
                 </p>
               </div>
@@ -117,6 +129,7 @@ export default function SignTransaction({
                 ? 'bg-red-50 text-red-700 border border-red-200'
                 : 'bg-amber-50 text-amber-700 border border-amber-200'
             }`}>
+              {/* todo: add expiry logic */}
               Expires in: {timeLeft} seconds
             </div>
           </div>

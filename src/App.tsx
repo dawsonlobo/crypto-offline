@@ -1,48 +1,66 @@
-import { useState } from 'react';
-import CoinSelect from './components/CoinSelect';
-import WalletAccess from './components/WalletAccess';
-import Welcome from './components/Welcome';
-import SignTransaction from './components/SignTransaction';
-import QRDisplay from './components/QRDisplay';
-import PrivateKeyModal from './components/PrivateKeyModal';
-import type { Cryptocurrency, WalletInfo, Transaction } from './types/wallet';
-import { RECOVERY_TYPE } from './functions';
-import { getPrivateKey } from './functions/solana';
-import QRScannerModal from './components/QRScannerModal'; // ⬅️ import your modal
+import { useState } from "react";
+import CoinSelect from "./components/CoinSelect";
+import WalletAccess from "./components/WalletAccess";
+import Welcome from "./components/Welcome";
+import SignTransaction from "./components/SignTransaction";
+import QRDisplay from "./components/QRDisplay";
+import PrivateKeyModal from "./components/PrivateKeyModal";
+import type { Cryptocurrency, WalletInfo, Transaction } from "./types/wallet";
+import { getPrivateKey, signOffline } from "./functions/solana";
+import QRScannerModal from "./components/QRScannerModal"; // ⬅️ import your modal
+import { RECOVERY_TYPE } from "./functions";
 
 type AppState =
-  | { stage: 'coin-select' }
-  | { stage: 'wallet-access'; coin: Cryptocurrency }
-  | { stage: 'welcome'; wallet: WalletInfo }
-  | { stage: 'sign-transaction'; wallet: WalletInfo; transaction: Transaction | null }
-  | { stage: 'qr-display'; wallet: WalletInfo; transaction: Transaction };
+  | { stage: "coin-select" }
+  | { stage: "wallet-access"; coin: Cryptocurrency }
+  | { stage: "welcome"; wallet: WalletInfo }
+  | {
+      stage: "sign-transaction";
+      wallet: WalletInfo;
+      transaction: Transaction | null;
+    }
+  | { stage: "qr-display"; wallet: WalletInfo; transaction: Transaction };
 
 function App() {
-  const [state, setState] = useState<AppState>({ stage: 'coin-select' });
+  const [state, setState] = useState<AppState>({ stage: "coin-select" });
   // const [wallet, setWallet] = useState<WalletInfo>({ stage: 'coin-select' });
   const [showPrivateKey, setShowPrivateKey] = useState(false);
   const [showScanner, setShowScanner] = useState(false); // ⬅️ add this
 
   const handleCoinSelect = (coin: Cryptocurrency) => {
-    setState({ stage: 'wallet-access', coin });
+    setState({ stage: "wallet-access", coin });
   };
 
   const handleWalletAccess = (method: RECOVERY_TYPE, value: string) => {
-    if (state.stage !== 'wallet-access') return;
+    if (state.stage !== "wallet-access") return;
 
     // const wallet = getMockWalletInfo(state.coin, method);
     const wallet = getPrivateKey(method, value);
-    setState({ stage: 'welcome', wallet: {
-      address:wallet?.address || "NA",
-      coin:"ETH",
-      balance:0,
-      balanceUSD:0,
-    } });
+
+    if (wallet?.secretKeyUint8Array === undefined) {
+      alert("Unable to fetch wallet info");
+      return;
+    }
+
+    setState({
+      stage: "welcome",
+      wallet: {
+        address: wallet?.address || "NA",
+        secretKey: wallet.secretKeyUint8Array,
+        coin: "ETH",
+        balance: 0,
+        balanceUSD: 0,
+      },
+    });
   };
 
   const handleSignTransaction = () => {
-    if (state.stage !== 'welcome') return;
-    setState({ stage: 'sign-transaction', wallet: state.wallet, transaction: null });
+    if (state.stage !== "welcome") return;
+    setState({
+      stage: "sign-transaction",
+      wallet: state.wallet,
+      transaction: null,
+    });
   };
 
   // old code
@@ -66,16 +84,15 @@ function App() {
   // new code
   const handleScanQR = () => {
     // Allow opening the scanner only from sign-transaction stage
-    
-    if (state.stage !== 'sign-transaction') return;
-    console.log('ssss');
-    
+
+    if (state.stage !== "sign-transaction") return;
     setShowScanner(true);
   };
 
-
-
-    const handleQRResult = (qrData: string) => {
+  const handleQRResult = async (qrData: string) => {
+    console.log("93");
+    console.log(qrData);
+    
     // 1) Close the scanner
     setShowScanner(false);
 
@@ -83,81 +100,138 @@ function App() {
     // Expecting JSON text that matches your Transaction shape.
     try {
       const parsed = JSON.parse(qrData);
+      /*
+      {
+      senderAddress,
+      receiverAddress,
+      amount,
+      expiry: 1000,
+      blockhash,
+    }
+      */
 
       // Optional: validate minimally
-      if (!parsed?.sender || !parsed?.receiver || !parsed?.amount || !parsed?.coin) {
-        throw new Error('Missing required fields');
+      if (
+        !parsed?.senderAddress ||
+        !parsed?.receiverAddress ||
+        !parsed?.amount ||
+        !parsed?.expiry ||
+        !parsed?.blockhash
+      ) {
+        throw new Error("Missing required fields");
       }
 
+      if (state.stage !== "sign-transaction") {
+        throw new Error("Unable to find wallet");
+      }
+
+      // todo: if blockhash expired stop it
+
+      const signedData =await signOffline(
+        state.wallet.secretKey,
+        { skipValidation: false },
+        parsed?.senderAddress,
+        parsed?.blockhash,
+        [
+          {
+            programId: "11111111111111111111111111111111",
+            keys: [
+              {
+                pubkey: parsed?.senderAddress,
+                isSigner: true,
+                isWritable: true,
+              },
+              {
+                pubkey: parsed?.receiverAddress,
+                isSigner: false,
+                isWritable: true,
+              },
+            ],
+            solAmount: parsed.amount,
+          },
+        ]
+      );
+
+
+      console.log('building tx');
+      
+
+      
+      
       // 3) Build a Transaction object that your SignTransaction expects
       const tx: Transaction = {
-        sender: parsed.sender,
-        receiver: parsed.receiver,
-        senderBalance: state.stage === 'sign-transaction' ? (state.wallet.balance || 0) : 0,
-        senderBalanceUSD: state.stage === 'sign-transaction' ? (state.wallet.balanceUSD || 0) : 0,
-        amount: parsed.amount,
-        amountUSD: parsed.amountUSD ?? 0,
-        coin: parsed.coin,
-        expiresIn: parsed.expiresIn ?? 20,
+        senderAddress: parsed?.senderAddress,
+        receiverAddress: parsed?.receiverAddress,
+        amount: parsed?.amount,
+        expiry: parsed?.expiry,
+        blockhash: parsed?.blockhash,
+        signedTx: signedData,
       };
+        console.log('152');
+        console.log(tx);
 
-      // 4) Move (stay) in sign-transaction stage but now with a filled transaction
-      if (state.stage === 'sign-transaction') {
+      if (state.stage === "sign-transaction") {
         setState({
-          stage: 'sign-transaction',
+          stage: "sign-transaction",
           wallet: state.wallet,
           transaction: tx,
         });
       }
-    } catch {
-      alert('Invalid QR code data. Make sure it contains a valid JSON Transaction.');
+    } catch(error) {
+      alert(
+        `Invalid QR code data. Make sure it contains a valid JSON Transaction. ${error}`
+      );
     }
   };
 
-
-
-
-
-
   const handleGenerateQR = () => {
-    if (state.stage !== 'sign-transaction' || !state.transaction) return;
-    setState({ stage: 'qr-display', wallet: state.wallet, transaction: state.transaction });
+    if (state.stage !== "sign-transaction" || !state.transaction) return;
+    setState({
+      stage: "qr-display",
+      wallet: state.wallet,
+      transaction: state.transaction,
+    });
   };
 
   const handleQRProceed = () => {
-    if (state.stage !== 'qr-display') return;
-    setState({ stage: 'welcome', wallet: state.wallet });
+    if (state.stage !== "qr-display") return;
+    setState({ stage: "welcome", wallet: state.wallet });
   };
 
   const handleBackFromSign = () => {
-    if (state.stage !== 'sign-transaction') return;
-    setState({ stage: 'welcome', wallet: state.wallet });
+    if (state.stage !== "sign-transaction") return;
+    setState({ stage: "welcome", wallet: state.wallet });
   };
 
   const handleBackFromQR = () => {
-    if (state.stage !== 'qr-display') return;
-    setState({ stage: 'sign-transaction', wallet: state.wallet, transaction: state.transaction });
+    if (state.stage !== "qr-display") return;
+    setState({
+      stage: "sign-transaction",
+      wallet: state.wallet,
+      transaction: state.transaction,
+    });
   };
 
   const handleBackFromAccess = () => {
-    setState({ stage: 'coin-select' });
+    setState({ stage: "coin-select" });
   };
 
   const handleLogout = () => {
-    setState({ stage: 'coin-select' });
+    setState({ stage: "coin-select" });
   };
 
   const handleViewPrivateKey = () => {
     setShowPrivateKey(true);
   };
 
-  const mockPrivateKey = '5K9f8d3e2a1b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d';
+  const mockPrivateKey =
+    "5K9f8d3e2a1b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d";
 
-  if (state.stage === 'coin-select') {
+  if (state.stage === "coin-select") {
     return <CoinSelect onSelect={handleCoinSelect} />;
   }
 
-  if (state.stage === 'wallet-access') {
+  if (state.stage === "wallet-access") {
     return (
       <WalletAccess
         coin={state.coin}
@@ -167,7 +241,7 @@ function App() {
     );
   }
 
-  if (state.stage === 'welcome') {
+  if (state.stage === "welcome") {
     return (
       <>
         <Welcome
@@ -186,17 +260,15 @@ function App() {
     );
   }
   if (showScanner) {
-    console.log('ddddd');
-    
     return (
-        <QRScannerModal
-          onClose={() => setShowScanner(false)}
-          onScanResult={handleQRResult}
-        />
-      )
+      <QRScannerModal
+        onClose={() => setShowScanner(false)}
+        onScanResult={handleQRResult}
+      />
+    );
   }
 
-  if (state.stage === 'sign-transaction') {
+  if (state.stage === "sign-transaction") {
     return (
       <SignTransaction
         transaction={state.transaction}
@@ -207,7 +279,7 @@ function App() {
     );
   }
 
-  if (state.stage === 'qr-display') {
+  if (state.stage === "qr-display") {
     return (
       <QRDisplay
         transaction={state.transaction}
@@ -217,9 +289,7 @@ function App() {
     );
   }
 
-  
-
-   // ✅ Add the modal here — below all "if" returns but before the final null
+  // ✅ Add the modal here — below all "if" returns but before the final null
   return null;
 }
 

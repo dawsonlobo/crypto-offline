@@ -1,24 +1,24 @@
 import { useState } from 'react';
 import { KeyRound, Upload, FileKey } from 'lucide-react';
-import type { Cryptocurrency, AccessMethod } from '../types/wallet';
+import type { Cryptocurrency } from '../types/wallet';
+import { RECOVERY_TYPE } from '../functions';
 
 interface WalletAccessProps {
   coin: Cryptocurrency;
-  onAccess: (method: AccessMethod, value: string) => void;
+  onAccess: (method: RECOVERY_TYPE, value: string) => void;
   onBack: () => void;
 }
 
 export default function WalletAccess({ coin, onAccess, onBack }: WalletAccessProps) {
-  const [showInput, setShowInput] = useState<AccessMethod | null>(null);
+  const [showInput, setShowInput] = useState<RECOVERY_TYPE | null>(null);
   const [inputValue, setInputValue] = useState('');
 
-  const handleMethodSelect = (method: AccessMethod) => {
+  const handleMethodSelect = (method: RECOVERY_TYPE) => {
     setShowInput(method);
     setInputValue('');
   };
 
   const handleSubmit = () => {
-    console.log(showInput);
     
     if (inputValue.trim()) {
       onAccess(showInput!, inputValue);
@@ -28,7 +28,7 @@ export default function WalletAccess({ coin, onAccess, onBack }: WalletAccessPro
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      onAccess('keystore', file.name);
+      onAccess(RECOVERY_TYPE.KEYSTORE, file.name);
     }
   };
 
@@ -109,7 +109,7 @@ export default function WalletAccess({ coin, onAccess, onBack }: WalletAccessPro
 
           <div className="space-y-3">
             <button
-              onClick={() => handleMethodSelect('phrase')}
+              onClick={() => handleMethodSelect(RECOVERY_TYPE.PHRASE)}
               className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 py-4 rounded-lg font-medium transition shadow-sm hover:shadow-md flex items-center justify-center gap-3"
             >
               <FileKey className="w-5 h-5" />
@@ -117,7 +117,7 @@ export default function WalletAccess({ coin, onAccess, onBack }: WalletAccessPro
             </button>
 
             <button
-              onClick={() => handleMethodSelect('keystore')}
+              onClick={() => handleMethodSelect(RECOVERY_TYPE.KEYSTORE)}
               className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 py-4 rounded-lg font-medium transition shadow-sm hover:shadow-md flex items-center justify-center gap-3"
             >
               <Upload className="w-5 h-5" />
@@ -125,7 +125,7 @@ export default function WalletAccess({ coin, onAccess, onBack }: WalletAccessPro
             </button>
 
             <button
-              onClick={() => handleMethodSelect('privateKey')}
+              onClick={() => handleMethodSelect(RECOVERY_TYPE.PRIVATE_KEY)}
               className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 py-4 rounded-lg font-medium transition shadow-sm hover:shadow-md flex items-center justify-center gap-3"
             >
               <KeyRound className="w-5 h-5" />

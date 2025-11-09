@@ -1,9 +1,9 @@
 export type Cryptocurrency = 'BTC' | 'ETH' | 'SOL' | 'ADA';
 
-// export type AccessMethod = 'phrase' | 'keystore' | 'privateKey';
+export type AccessMethod = 'phrase' | 'keystore' | 'privateKey';
 
 export interface WalletInfo {
-  // secretKey: string;
+  secretKey: Uint8Array<ArrayBufferLike>;
   address: string;
   coin: Cryptocurrency;
   balance?: number;
@@ -11,12 +11,10 @@ export interface WalletInfo {
 }
 
 export interface Transaction {
-  sender: string;
-  receiver: string;
-  senderBalance: number;
-  senderBalanceUSD: number;
+  senderAddress: string;
+  receiverAddress: string;
   amount: number;
-  amountUSD: number;
-  coin: Cryptocurrency;
-  expiresIn: number;
+  expiry: number;
+  blockhash: string;
+  signedTx:string
 }

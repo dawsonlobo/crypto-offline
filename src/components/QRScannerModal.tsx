@@ -20,18 +20,13 @@ export default function QRScannerModal({
   };
 
   const handleScan = (data: { text?: string } | null) => {
-    console.log("handleScan");
-    console.log(data);
 
     if (data?.text) {
-      console.log("Scanned QR text:", data.text);
       onScanResult(data.text);
     }
   };
 
   const handleError = (err: unknown) => {
-    console.log("err");
-    console.log(err);
     if (err instanceof Error) {
       console.error(err);
       setError(err.message);
