@@ -5,6 +5,13 @@ import path from "path";
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server:{
+        hmr: false,
+
+    allowedHosts:[
+      "15abf604b60c.ngrok-free.app"
+    ]
+  },
   optimizeDeps: {
       include: ['@noble/hashes'],
     exclude: ['lucide-react'],
