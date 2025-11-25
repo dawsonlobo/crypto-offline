@@ -1,19 +1,15 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import path from "path";
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from "path"
 
-// https://vitejs.dev/config/
 export default defineConfig({
+  base: "./",   // ⬅⬅⬅ FIX FOR ELECTRON + APPIMAGE
   plugins: [react()],
-  server:{
-        hmr: false,
-
-    allowedHosts:[
-      "15abf604b60c.ngrok-free.app"
-    ]
+  server: {
+    hmr: false
   },
   optimizeDeps: {
-      include: ['@noble/hashes'],
+    include: ['@noble/hashes'],
     exclude: ['lucide-react'],
   },
   resolve: {
@@ -21,4 +17,4 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-});
+})
