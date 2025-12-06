@@ -46,6 +46,7 @@ function App() {
       stage: "welcome",
       wallet: {
         address: wallet?.address || "NA",
+        privateKey: wallet.secretKeyBase58,
         secretKey: wallet.secretKeyUint8Array,
         coin: "ETH",
         balance: 0,
@@ -90,16 +91,29 @@ function App() {
   };
 
   const handleQRResult = async (qrData: string) => {
-    console.log("93");
-    console.log(qrData);
-    
+    if (state.stage !== "sign-transaction") return;
+
     // 1) Close the scanner
     setShowScanner(false);
 
     // 2) Parse the QR payload.
     // Expecting JSON text that matches your Transaction shape.
     try {
-      const parsed = JSON.parse(qrData);
+      const qrArray = qrData?.split(",");
+      const splittedArray = qrArray?.[0]?.split("_");
+      if (
+        splittedArray?.[0] !== state.wallet?.address?.slice(0, 5) ||
+        splittedArray?.[1] !== state.wallet?.address?.slice(-5) 
+      ) {
+                throw new Error("Invalid Sender");
+      }
+      const parsed = {
+        senderAddress: state.wallet?.address,
+        receiverAddress: qrArray?.[1],
+        amount: Number(qrArray?.[2]),
+        expiry: Number(qrArray?.[3]),
+        blockhash: qrArray?.[4],
+      };
       /*
       {
       senderAddress,
@@ -127,7 +141,7 @@ function App() {
 
       // todo: if blockhash expired stop it
 
-      const signedData =await signOffline(
+      const signedData = await signOffline(
         state.wallet.secretKey,
         { skipValidation: false },
         parsed?.senderAddress,
@@ -152,12 +166,8 @@ function App() {
         ]
       );
 
+      console.log("building tx");
 
-      console.log('building tx');
-      
-
-      
-      
       // 3) Build a Transaction object that your SignTransaction expects
       const tx: Transaction = {
         senderAddress: parsed?.senderAddress,
@@ -167,8 +177,8 @@ function App() {
         blockhash: parsed?.blockhash,
         signedTx: signedData,
       };
-        console.log('152');
-        console.log(tx);
+      console.log("152");
+      console.log(tx);
 
       if (state.stage === "sign-transaction") {
         setState({
@@ -177,7 +187,7 @@ function App() {
           transaction: tx,
         });
       }
-    } catch(error) {
+    } catch (error) {
       alert(
         `Invalid QR code data. Make sure it contains a valid JSON Transaction. ${error}`
       );
@@ -224,8 +234,6 @@ function App() {
     setShowPrivateKey(true);
   };
 
-  const mockPrivateKey =
-    "5K9f8d3e2a1b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d";
 
   if (state.stage === "coin-select") {
     return <CoinSelect onSelect={handleCoinSelect} />;
@@ -252,7 +260,7 @@ function App() {
         />
         {showPrivateKey && (
           <PrivateKeyModal
-            privateKey={mockPrivateKey}
+            privateKey={state.wallet.privateKey}
             onClose={() => setShowPrivateKey(false)}
           />
         )}
