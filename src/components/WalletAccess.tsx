@@ -26,10 +26,15 @@ export default function WalletAccess({ coin, onAccess, onBack }: WalletAccessPro
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onAccess(RECOVERY_TYPE.KEYSTORE, file.name);
-    }
+  const file = e.target.files?.[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = reader.result as string;
+      onAccess(RECOVERY_TYPE.KEYSTORE, text);
+    };
+    reader.readAsText(file);
+  }
   };
 
   if (showInput) {

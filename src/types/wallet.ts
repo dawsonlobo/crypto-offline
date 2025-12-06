@@ -3,6 +3,7 @@ export type Cryptocurrency = 'BTC' | 'ETH' | 'SOL' | 'ADA';
 export type AccessMethod = 'phrase' | 'keystore' | 'privateKey';
 
 export interface WalletInfo {
+  privateKey: string;
   secretKey: Uint8Array<ArrayBufferLike>;
   address: string;
   coin: Cryptocurrency;

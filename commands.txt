@@ -1,0 +1,6 @@
+Use wsl
+wsl -d Ubuntu
+rm -r node_modules
+npm i
+npm run build
+npx electron-builder --linux AppImage

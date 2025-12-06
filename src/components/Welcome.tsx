@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, Check, LogOut, Key, FileSignature } from 'lucide-react';
+import { Copy, Check, LogOut, Key, FileSignature, CreditCard } from 'lucide-react';
 import { shortenAddress, copyToClipboard } from '../utils/wallet';
 import type { WalletInfo } from '../types/wallet';
 
@@ -78,6 +78,13 @@ export default function Welcome({ wallet, onSignTransaction, onViewPrivateKey, o
             >
               <Key className="w-5 h-5" />
               View Private Key
+            </button>
+<button
+              onClick={onViewPrivateKey}
+              className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 py-4 rounded-lg font-medium transition shadow-sm hover:shadow-md flex items-center justify-center gap-3"
+            >
+              <CreditCard className="w-5 h-5" />
+              Print Paper Wallet
             </button>
 
             <button
